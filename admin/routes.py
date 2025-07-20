@@ -6,12 +6,8 @@ from werkzeug.utils import secure_filename
 import os
 
 def get_db_connection():
-    return psycopg2.connect(
-        host="localhost",
-        database="movil",
-        user="postgres",
-        password="jimena123456"
-    )
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    return conn
 # Decorador para restringir acceso solo a admin
 def admin_required(f):
     from functools import wraps
