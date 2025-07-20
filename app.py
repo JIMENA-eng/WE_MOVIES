@@ -17,14 +17,7 @@ app.register_blueprint(admin_bp)
 
 # Configura la conexión a la base de datos 'movil'
 def get_db_connection():
-    conn = psycopg2.connect(
-        dbname='movil',
-        user='postgres',
-        password='jimena123456',  # Usa UTF-8, sin tildes ni caracteres especiales si es posible
-        host='localhost',
-        port='5432'
-    )
-    conn.set_client_encoding('UTF8')
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
     return conn
 
 def obtener_peliculas_populares():
