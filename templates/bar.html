@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi Barra</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+        }
+
+        .header-principal {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .boton-inicio {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .boton-inicio:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+            background: linear-gradient(45deg, #764ba2 0%, #667eea 100%);
+        }
+
+        .page-title {
+            text-align: center;
+            margin: 3rem 0;
+        }
+
+        .page-title h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .sections-container {
+            display: grid;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .seccion {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.6s ease forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .seccion:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .seccion:nth-child(1) { animation-delay: 0.1s; }
+        .seccion:nth-child(2) { animation-delay: 0.2s; }
+        .seccion:nth-child(3) { animation-delay: 0.3s; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .section-header .icon {
+            font-size: 1.5rem;
+            padding: 0.5rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .megusta .icon { background: linear-gradient(45deg, #ff6b6b, #ee5a24); }
+        .favoritos .icon { background: linear-gradient(45deg, #feca57, #ff9ff3); }
+        .listas .icon { background: linear-gradient(45deg, #48cae4, #023e8a); }
+
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .movie-item {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .movie-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .movie-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .movie-item:hover .movie-card {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.25);
+            border-color: rgba(102, 126, 234, 0.4);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .movie-item:hover .movie-card::before {
+            left: 100%;
+        }
+
+        .movie-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #ffffff;
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
+        }
+
+        .movie-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        .movie-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 15px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        .empty-state .emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        /* Lista simple para pantallas pequeñas */
+        .movies-list {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            .page-title h1 {
+                font-size: 2rem;
+            }
+
+            .movies-grid {
+                display: none;
+            }
+
+            .movies-list {
+                display: block;
+            }
+
+            .movies-list ul {
+                list-style: none;
+            }
+
+            .movies-list li {
+                margin-bottom: 0.5rem;
+            }
+
+            .movies-list a {
+                display: block;
+                padding: 1rem;
+                background: rgba(255, 255, 255, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 10px;
+                color: #ffffff;
+                text-decoration: none;
+                transition: all 0.3s ease;
+            }
+
+            .movies-list a:hover {
+                background: rgba(255, 255, 255, 0.12);
+                transform: translateX(5px);
+                border-color: rgba(102, 126, 234, 0.4);
+            }
+
+            .seccion {
+                padding: 1.5rem;
+            }
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mejoras adicionales */
+        .stats-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-left: auto;
+        }
+
+        .section-content {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <header class="header-principal">
+        <div class="container">
+            <a href="{{ url_for('inicio') }}" class="boton-inicio">
+                <span>🏠</span>
+                <span>Inicio</span>
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="page-title">
+            <h1>Mi Barra Personal</h1>
+            <p class="page-subtitle">Tu colección de películas favoritas</p>
+        </div>
+
+        <div class="sections-container">
+            <!-- Sección Me Gusta -->
+            <div class="seccion megusta">
+                <div class="section-header">
+                    <div class="icon">❤️</div>
+                    <h2>Me Gusta</h2>
+                    {% if megusta %}
+                        <div class="stats-badge">{{ megusta|length }} películas</div>
+                    {% endif %}
+                </div>
+
+                <div class="section-content">
+                    {% if megusta %}
+                        <!-- Vista de cards para pantallas grandes -->
+                        <div class="movies-grid">
+                            {% for peli in megusta %}
+                                <a href="{{ url_for('detalle_pelicula', pelicula_id=peli[0]) }}" class="movie-item">
+                                    <div class="movie-card">
+                                        <div class="movie-title">{{ peli[1] }}</div>
+                                        <div class="movie-meta">
+                                            <div class="movie-indicator"></div>
+                                            <span>Click para ver detalles</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Vista de lista para móviles -->
+                        <div class="movies-list">
+                            <ul>
+                                {% for peli in megusta %}
+                                    <li><a href="{{ url_for('detalle_pelicula', pelicula_id=peli[0]) }}">{{ peli[1] }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="emoji">💔</div>
+                            <p>No tienes películas marcadas con me gusta.<br>¡Empieza a explorar y marca tus favoritas!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sección Favoritos -->
+            <div class="seccion favoritos">
+                <div class="section-header">
+                    <div class="icon">⭐</div>
+                    <h2>Favoritos</h2>
+                    {% if favoritos %}
+                        <div class="stats-badge">{{ favoritos|length }} películas</div>
+                    {% endif %}
+                </div>
+
+                <div class="section-content">
+                    {% if favoritos %}
+                        <!-- Vista de cards para pantallas grandes -->
+                        <div class="movies-grid">
+                            {% for peli in favoritos %}
+                                <a href="{{ url_for('detalle_pelicula', pelicula_id=peli[0]) }}" class="movie-item">
+                                    <div class="movie-card">
+                                        <div class="movie-title">{{ peli[1] }}</div>
+                                        <div class="movie-meta">
+                                            <div class="movie-indicator"></div>
+                                            <span>Película favorita</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Vista de lista para móviles -->
+                        <div class="movies-list">
+                            <ul>
+                                {% for peli in favoritos %}
+                                    <li><a href="{{ url_for('detalle_pelicula', pelicula_id=peli[0]) }}">{{ peli[1] }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="emoji">⭐</div>
+                            <p>No tienes películas favoritas.<br>¡Marca algunas películas como favoritas para verlas aquí!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sección Mi Lista -->
+            <div class="seccion listas">
+                <div class="section-header">
+                    <div class="icon">📂</div>
+                    <h2>Mi Lista</h2>
+                    {% if listas %}
+                        <div class="stats-badge">{{ listas|length }} películas</div>
+                    {% endif %}
+                </div>
+
+                <div class="section-content">
+                    {% if listas %}
+                        <!-- Vista de cards para pantallas grandes -->
+                        <div class="movies-grid">
+                            {% for peli in listas %}
+                                <a href="{{ url_for('detalle_pelicula', pelicula_id=peli[0]) }}" class="movie-item">
+                                    <div class="movie-card">
+                                        <div class="movie-title">{{ peli[1] }}</div>
+                                        <div class="movie-meta">
+                                            <div class="movie-indicator"></div>
+                                            <span>En tu lista</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Vista de lista para móviles -->
+                        <div class="movies-list">
+                            <ul>
+                                {% for peli in listas %}
+                                    <li><a href="{{ url_for('detalle_pelicula', pelicula_id=peli[0]) }}">{{ peli[1] }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="emoji">📝</div>
+                            <p>No tienes películas en tu lista.<br>¡Agrega películas que quieras ver más tarde!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

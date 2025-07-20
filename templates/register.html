@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro - ZIMMYFLIX</title>
+
+    <!-- Cropper CSS (CDN) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+
+    <style>
+        body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(rgba(0,0,30,0.8), rgba(0,0,30,0.9)), url('{{ url_for("static", filename="img/fondo_login.png") }}') no-repeat center center fixed;
+    background-size: cover;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 60px;
+    padding: 20px;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+.left-panel {
+    background: rgba(0, 0, 50, 0.8);
+    padding: 40px;
+    border-radius: 15px;
+    width: 100%;
+    max-width: 500px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.left-panel img.logo {
+    width: 250px;
+    display: block;
+    margin: 0 auto 15px auto;
+}
+
+.left-panel h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+label {
+    font-weight: bold;
+    margin-top: 10px;
+    display: block;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"] {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    margin-bottom: 18px;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+.photo-box {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 400px;
+}
+
+.photo-box img {
+    width: 250px;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 4px solid white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+canvas {
+    display: none;
+}
+
+.btn {
+    padding: 15px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 15px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.btn-register {
+    background-color: crimson;
+    color: white;
+    width: 100%;
+    font-weight: bold;
+}
+
+.btn-register:hover {
+    background-color: #dc143c;
+    transform: translateY(-2px);
+}
+
+.btn-accept, .btn-change {
+    background-color: #ffffff;
+    color: #000;
+    font-weight: bold;
+    margin: 8px;
+    min-width: 120px;
+}
+
+.btn-accept:hover, .btn-change:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-2px);
+}
+
+.form-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+a {
+    color: lightblue;
+    font-size: 0.9em;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    body {
+        flex-direction: column;
+        gap: 40px;
+        padding: 20px;
+    }
+    
+    .left-panel, .photo-box {
+        max-width: 100%;
+        width: 100%;
+        max-width: 500px;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 15px;
+        gap: 30px;
+    }
+    
+    .left-panel {
+        padding: 30px;
+    }
+    
+    .photo-box {
+        padding: 30px;
+    }
+    
+    .photo-box img {
+        width: 200px;
+        height: 200px;
+    }
+    
+    .left-panel img.logo {
+        width: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn-accept, .btn-change {
+        width: 100%;
+        margin: 5px 0;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="left-panel">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="ZIMMYFLIX" class="logo">
+        <p>Disfruta de tus películas, dramas, series favoritas y mucho más en ZIMMYFLIX. ¡Regístrate ahora!</p>
+
+        {% if error %}
+            <div style="color: red; font-weight: bold;">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data" onsubmit="return validarFormulario();">
+            <label>Nombre de Usuario:</label>
+            <input type="text" name="usuario" required>
+
+            <label>Email:</label>
+            <input type="email" name="email" required>
+
+            <label>PAIS:</label>
+            <input type="text" name="pais">
+
+            <label>Contraseña:</label>
+            <input type="password" name="password" required>
+
+            <label>Fecha de Nacimiento:</label>
+            <input type="date" name="fecha_nacimiento">
+
+            <label>Foto de Perfil:</label>
+            <input type="file" id="imgInput" accept="image/*">
+
+            <input type="hidden" name="imagen_crop" id="imagen_crop">
+            <canvas id="canvas" style="display: none;"></canvas>
+
+            <button type="submit" class="btn btn-register">Registrarse</button>
+            <p>¿Ya tienes una cuenta? <a href="/">Inicia Sesión aquí</a></p>
+        </form>
+    </div>
+
+    <div class="photo-box">
+        <img id="preview" src="{{ url_for('static', filename='perfil.png') }}" alt="Vista previa">
+        <div class="form-actions">
+            <button type="button" class="btn btn-accept">Aceptar</button>
+            <button type="button" class="btn btn-change">Cambiar</button>
+        </div>
+    </div>
+
+    <!-- Cropper JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script>
+        const imgInput = document.getElementById('imgInput');
+        const preview = document.getElementById('preview');
+        const canvas = document.getElementById('canvas');
+        const inputHidden = document.getElementById('imagen_crop');
+        const btnAccept = document.querySelector('.btn-accept');
+        const btnChange = document.querySelector('.btn-change');
+        let cropper;
+
+        imgInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (evt) {
+                    preview.src = evt.target.result;
+                    if (cropper) cropper.destroy();
+                    cropper = new Cropper(preview, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        autoCropArea: 1,
+                        responsive: true
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        btnAccept.onclick = () => {
+            if (cropper) {
+                const croppedCanvas = cropper.getCroppedCanvas({ width: 250, height: 250 });
+                const ctx = canvas.getContext('2d');
+                canvas.width = 250;
+                canvas.height = 250;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(croppedCanvas, 0, 0);
+                inputHidden.value = canvas.toDataURL("image/jpeg");
+                cropper.destroy();
+            }
+        };
+
+        btnChange.onclick = () => {
+            imgInput.click();
+        };
+
+        function validarFormulario() {
+            const crop = document.getElementById("imagen_crop").value;
+            if (!crop) {
+                alert("Por favor selecciona y acepta una imagen de perfil.");
+                return false;
+            }
+            return true;
+        }
+    </script>
+</body>
+
+</html>

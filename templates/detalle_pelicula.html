@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Plataforma de streaming de películas y series">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>{{ titulo }} - ZimmyFlix</title>
+</head>
+
+<body>
+    <header class="navbar">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo de {{ titulo }}">
+        </div>
+        <div class="container">
+            <a href="/" class="btn">🏠 Inicio</a>
+        </div>
+        
+            <div class="auth-buttons">
+                {% if 'user_id' in session %}
+                    <div class="user-box" onclick="toggleDropdown()">
+                        {% set foto = get_foto(session['user_id']) %}
+                        {% if foto %}
+                            <img src="data:image/jpeg;base64,{{ foto }}" class="avatar">
+                        {% endif %}
+                        <span>{{ session['usuario'] }}</span>
+                        <div class="dropdown-menu" id="userDropdown">
+                            <a href="{{ url_for('detalle_minibar') }}">📄 Mi Biblioteca</a>
+                            <hr>
+                            <a href="{{ url_for('logout') }}">🚪 Cerrar Sesión</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <button onclick="document.getElementById('loginModal').style.display='block'" class="btn-login">
+                        Iniciar Sesión
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <section class="card fade-in">
+            <div class="movie-detail">
+                {% if portada %}
+                <img src="data:image/jpeg;base64,{{ portada }}" class="movie-poster" alt="{{ titulo }}" loading="lazy">
+                {% else %}
+                <div class="movie-poster placeholder-card">
+                    <span>{{ titulo }}</span>
+                </div>
+                {% endif %}
+
+                <div>
+                    <h2 class="movie-title">{{ titulo }}</h2>
+                    <p class="description">{{ descripcion if descripcion else 'Descripción no disponible' }}</p>
+
+                    {% if etiquetas %}
+                    <div class="tags">
+                        {% for etiqueta in etiquetas %}
+                        <span class="tag">{{ etiqueta }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span>👍</span>
+                            <strong>{{ likes }}</strong> Me gusta
+                        </div>
+                        <div class="stat-item">
+                            <span>👁️</span>
+                            <strong>{{ vistas }}</strong> Vistas
+                        </div>
+                        <div class="stat-item">
+                            <span>⭐</span>
+                            <strong>{{ promedio }}</strong> / 5
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        {% if session.user_id %}
+                        <form method="POST" action="/me_gusta" style="display: inline;">
+                            <input type="hidden" name="pelicula_id" value="{{ pelicula_id }}">
+                            <button type="submit" class="btn">👍 Me gusta</button>
+                        </form>
+                        <form method="POST" action="/agregar_lista" style="display: inline;">
+                            <input type="hidden" name="pelicula_id" value="{{ pelicula_id }}">
+                            <button type="submit" class="btn">📂 Mi Lista</button>
+                        </form>
+                        <form method="POST" action="/agregar_favorito" style="display: inline;">
+                            <input type="hidden" name="pelicula_id" value="{{ pelicula_id }}">
+                            <button type="submit" class="btn">⭐ Favorito</button>
+                        </form>
+                        {% else %}
+                        <button type="button" class="btn" onclick="openModal()">👍 Me gusta</button>
+                        <button type="button" class="btn" onclick="openModal()">📂 Mi Lista</button>
+                        <button type="button" class="btn" onclick="openModal()">⭐ Favorito</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {% if url_video %}
+            <section class="card fade-in">
+                <h3 class="section-title">🎬 Ver película</h3>
+                <iframe 
+                    src="{{ url_video | replace('/view', '/preview') }}"
+                    width="100%" height="480" allow="autoplay" allowfullscreen
+                    class="video-player">
+                </iframe>
+            </section>
+        {% else %}
+            <section class="card fade-in">
+                <h3 class="section-title">🎬 Ver película</h3>
+                <div style="padding: 30px; text-align: center; background-color: #1c1c1c; border-radius: 10px; color: #ccc;">
+                    🚫 Esta película no está disponible en esta sección por el momento.
+                </div>
+            </section>
+        {% endif %}
+
+        {% if capitulos %}
+        <section class="card fade-in">
+            <h3 class="section-title">📺 Capítulos disponibles</h3>
+            <div class="grid">
+                {% for capitulo in capitulos %}
+                <div class="item-card" onclick="loadChapter('{{ capitulo.url }}')">
+                    
+                    {% if capitulo.portada %}
+                    <img src="data:image/jpeg;base64,{{ capitulo.portada }}" alt="Capítulo {{ loop.index }}" loading="lazy">
+                    {% else %}
+                    <div class="placeholder-card" style="height: 120px;">
+                        <span>Cap {{ loop.index }}</span>
+                    </div>
+                    {% endif %}
+                    <div style="padding: 15px;">
+                        <h4>Capítulo {{ loop.index }}</h4>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if comentarios %}
+        <section class="card fade-in">
+            <h3 class="section-title">📝 Comentarios</h3>
+            <div style="max-height: 300px; overflow-y: auto;">
+                {% for comentario in comentarios %}
+                <div class="comment-item">
+                    <strong>{{ comentario[0] }}:</strong> {{ comentario[1] }}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if session.user_id %}
+        <section class="card fade-in">
+            <h4>✍️ Agregar comentario</h4>
+            <form method="POST" action="/pelicula/{{ pelicula_id }}/comentario">
+                <textarea name="comentario" class="form-control" placeholder="Escribe tu comentario aquí..." required></textarea>
+                <select name="valoracion" class="form-control" required>
+                    <option value="">Selecciona una valoración</option>
+                    <option value="5">⭐⭐⭐⭐⭐ (5 estrellas)</option>
+                    <option value="4">⭐⭐⭐⭐ (4 estrellas)</option>
+                    <option value="3">⭐⭐⭐ (3 estrellas)</option>
+                    <option value="2">⭐⭐ (2 estrellas)</option>
+                    <option value="1">⭐ (1 estrella)</option>
+                </select>
+                <button type="submit" class="btn">Enviar comentario</button>
+            </form>
+        </section>
+        {% endif %}
+
+        {% if session.user_id and recomendaciones %}
+        <section class="card fade-in" id="recommendations-section">
+            <div class="section-header">
+                <h3 class="section-title">🎯 Recomendaciones para ti</h3>
+                <button class="btn" onclick="refreshRecommendations()">🔄 Nuevas</button>
+            </div>
+            <div class="grid" id="recommendations-grid">
+                {% for rec in recomendaciones %}
+                <div class="item-card">
+                    <a href="/pelicula/{{ rec.id }}">
+                        {% if rec.card %}
+                        <img src="data:image/jpeg;base64,{{ rec.card }}" alt="{{ rec.titulo }}" loading="lazy">
+                        {% else %}
+                        <div class="placeholder-card" style="height: 200px;">
+                            <span>{{ rec.titulo }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="movie-info">
+                            <h4 class="movie-title">{{ rec.titulo }}</h4>
+                            {% if rec.promedio %}
+                            <div class="movie-rating">
+                                <span class="rating-star">⭐</span>
+                                <span class="rating-value">{{ rec.promedio }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if similares %}
+        <section class="card fade-in" id="similar-section">
+            <div class="section-header">
+                <h3 class="section-title">🔍 Películas Similares</h3>
+                <button class="btn" onclick="refreshSimilar()">🔄 Otras</button>
+            </div>
+            <div class="grid" id="similar-grid">
+                {% for similar in similares %}
+                <div class="item-card">
+                    <a href="/pelicula/{{ similar[0] }}">
+                        {% if similar[3] %}
+                        <img src="data:image/jpeg;base64,{{ similar[3] }}" alt="{{ similar[1] }}" loading="lazy">
+                        {% else %}
+                        <div class="placeholder-card" style="height: 200px;">
+                            <span>{{ similar[1] }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="movie-info">
+                            <h4 class="movie-title">{{ similar[1] }}</h4>
+                            <div class="movie-genre">{{ similar[2] }}</div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Tendencias Globales -->
+        {% if otras_recomendaciones %}
+        <section class="otras-recomendaciones fade-in">
+            <h3>🌟 Tendencias Globales 
+                <small style="color:#888;">(Actualizado automáticamente)</small>
+            </h3>
+            <div class="trending-container">
+                {% for peli in otras_recomendaciones %}
+                <div class="trending-card">
+                    <div class="trending-rank">#{{ loop.index }}</div>
+                    <div class="trending-content">
+                        <div class="trending-placeholder">
+                            <span class="movie-icon">🎬</span>
+                        </div>
+                        <div class="trending-info">
+                            <h4 class="trending-title">{{ peli[1] }}</h4>
+                            <div class="rating-info">
+                                <span class="rating">⭐ {{ peli[2] }}</span>
+                                <span class="votes">({{ peli[3] }} votos)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+    </div>
+
+    <!-- SOLUCIÓN 2: Login con AJAX (sin recargar la página) -->
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2 style="margin-bottom: 20px; text-align: center; color: #667eea;">🔐 Iniciar Sesión</h2>
+        <form id="loginForm" onsubmit="loginAjax(event)" style="display: flex; flex-direction: column; gap: 15px;">
+            <input type="email" name="email" class="form-control" placeholder="correo@ejemplo.com" required>
+            <input type="password" name="password" class="form-control" placeholder="Tu contraseña" required>
+            <button type="submit" class="btn">Entrar</button>
+        </form>
+        <div id="loginError" style="color: red; margin-top: 10px; display: none;"></div>
+        <p>¿No tienes cuenta? <a href="{{ url_for('register') }}">Regístrate</a></p>
+    </div>
+</div>
+
+<script>
+// SCRIPT PARA LA SOLUCIÓN 2 (AJAX) - VERSION MEJORADA
+async function loginAjax(event) {
+    event.preventDefault(); // Prevenir el envío normal del formulario
+    
+    const form = document.getElementById('loginForm');
+    const formData = new FormData(form);
+    const errorDiv = document.getElementById('loginError');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    // Mostrar loading
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Iniciando...';
+    errorDiv.style.display = 'none';
+    
+    try {
+        console.log('Enviando petición de login...'); // Debug
+        
+        const response = await fetch('/login_ajax', {  // Usar ruta específica para AJAX
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'  // Identificar como petición AJAX
+            }
+        });
+        
+        console.log('Respuesta recibida:', response.status); // Debug
+        
+        // Verificar si la respuesta es JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('La respuesta no es JSON');
+        }
+        
+        const result = await response.json();
+        console.log('Datos JSON:', result); // Debug
+        
+        if (response.ok && result.success) {
+            // Login exitoso - recargar solo la página actual
+            closeModal();
+            location.reload(); // Recarga la página actual manteniendo la URL
+        } else {
+            // Mostrar error del servidor
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = result.message || 'Credenciales incorrectas';
+        }
+    } catch (error) {
+        console.error('Error en loginAjax:', error); // Debug detallado
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = `Error: ${error.message}`;
+    } finally {
+        // Restaurar botón
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Entrar';
+    }
+}
+
+// También actualizar las funciones existentes
+function openModal() {
+    const modal = document.getElementById('loginModal');
+    const errorDiv = document.getElementById('loginError');
+    if (modal) {
+        modal.style.display = 'block';
+        // Limpiar errores previos
+        if (errorDiv) {
+            errorDiv.style.display = 'none';
+        }
+    }
+}
+
+function closeModal() {
+    const modal = document.getElementById('loginModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+</script>
+
+    <script>
+        let index = 0;
+        const slides = document.querySelectorAll('.carousel-slide');
+        const container = document.getElementById('carousel');
+
+        function showSlide(i) {
+            const total = slides.length;
+            if (i < 0) index = total - 1;
+            else if (i >= total) index = 0;
+            else index = i;
+            container.style.transform = `translateX(-${index * 100}%)`;
+        }
+
+        function nextSlide() { showSlide(index + 1); }
+        function prevSlide() { showSlide(index - 1); }
+
+        setInterval(() => { nextSlide(); }, 6000);
+
+        function refreshRecommendations() {
+            const btn = event.target;
+            const grid = document.getElementById('recommendations-grid');
+            
+            btn.style.animation = 'rotate 1s linear infinite';
+            btn.innerHTML = '⟳';
+            
+            setTimeout(() => {
+                btn.style.animation = 'none';
+                btn.innerHTML = '🔄 Nuevas';
+                window.location.reload();
+            }, 1000);
+        }
+
+        // Función debounce para evitar múltiples llamadas
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Función para mostrar errores
+        function showError(message) {
+            console.error(message);
+        }
+
+        // Función para hacer peticiones HTTP
+        async function makeRequest(url) {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        }
+
+        function openModal() {
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.style.display = 'block';
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function toggleDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            if (dropdown) {
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            }
+        }
+
+        function toggleFiltro() {
+            const dropdown = document.getElementById('filtroDropdown');
+            if (dropdown) {
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            }
+        }
+
+        function loadChapter(url) {
+            if (url) {
+                const videoPlayer = document.querySelector('.video-player');
+                if (videoPlayer) {
+                    // Convertir la URL para preview si es necesario
+                    const previewUrl = url.replace('/view', '/preview');
+                    videoPlayer.src = previewUrl;
+                    
+                    // Scroll suave hacia el video
+                    videoPlayer.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
+                }
+            }
+        }
+
+        function refreshSimilar() {
+            const btn = event.target;
+            btn.style.animation = 'rotate 1s linear infinite';
+            btn.innerHTML = '⟳';
+            
+            setTimeout(() => {
+                btn.style.animation = 'none';
+                btn.innerHTML = '🔄 Otras';
+                window.location.reload();
+            }, 1000);
+        }
+    </script>
+
+    
+    <style>
+        
+        /* Estilos base para garantizar visibilidad de títulos */
+        body {
+            background-color: #0a0a0a;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Carrusel */
+        .carousel-title {
+            color: #ffffff !important;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .carousel-description {
+            color: #e0e0e0 !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+
+        .carousel-stats {
+            color: #cccccc !important;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+
+        /* Grid de películas */
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .movie-card-container {
+            position: relative;
+        }
+
+        .movie-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .movie-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        /* Contenedor de imagen */
+        .movie-image-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            overflow: hidden;
+        }
+
+        .movie-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .movie-image:hover {
+            transform: scale(1.05);
+        }
+
+        /* Placeholder para películas sin imagen */
+        .movie-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a1a, #333333);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .movie-placeholder.top-movie {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+        }
+
+        .movie-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            opacity: 0.7;
+        }
+
+        .placeholder-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            line-height: 1.2;
+            word-wrap: break-word;
+            hyphens: auto;
+        }
+
+        /* Contenedor del título */
+        .card-title-container {
+            padding: 15px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .card-title {
+            color: #ffffff !important;
+            font-size: 1rem;
+            font-weight: bold;
+            margin: 0;
+            line-height: 1.3;
+            text-align: center;
+            word-wrap: break-word;
+            hyphens: auto;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+
+        /* Popup al hover */
+        .hover-popup {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .movie-card-container:hover .hover-popup {
+            opacity: 1;
+        }
+
+        .hover-popup h4 {
+            color: #ffffff !important;
+            font-size: 1.2rem;
+            margin: 0 0 10px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+
+        .popup-desc {
+            color: #e0e0e0 !important;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        /* Tendencias globales */
+        .trending-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            padding: 20px 0;
+        }
+
+        .trending-card {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .trending-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .trending-rank {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ff6b35;
+            margin-right: 15px;
+            min-width: 50px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .trending-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .trending-placeholder {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .trending-info {
+            flex-grow: 1;
+        }
+
+        .trending-title {
+            margin: 0 0 5px 0;
+            color: #ffffff !important;
+            font-size: 1.1rem;
+            font-weight: bold;
+            line-height: 1.3;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .rating-info {
+            display: flex;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+
+        .rating {
+            color: #ffd700;
+        }
+
+        .votes {
+            color: #888;
+        }
+
+        /* Botón de refresh */
+        .refresh-btn {
+            background: none;
+            border: none;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            color: #ffffff;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255,255,255,0.1);
+            transform: scale(1.1);
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Etiquetas en popup */
+        .popup-etiquetas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .tag {
+            background: rgba(255,107,53,0.8);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+
+        /* Botón ver más */
+        .ver-mas {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .ver-mas:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255,107,53,0.4);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .movie-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .card-title {
+                font-size: 0.9rem;
+            }
+
+            .trending-container {
+                grid-template-columns: 1fr;
+            }
+
+            .carousel-title {
+                font-size: 1.4rem;
+            }
+        }
+
+        /* Asegurar que todos los textos sean visibles */
+        h2, h3, h4, p {
+            color: #ffffff !important;
+        }
+
+        section h2, section h3 {
+            padding: 0 20px;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        /* Reset y variables */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #667eea;
+    --primary-dark: #5a67d8;
+    --secondary-color: #764ba2;
+    --accent-color: #f093fb;
+    --background: #0f0f23;
+    --surface: #1a1a2e;
+    --card-bg: #16213e;
+    --text-primary: #ffffff;
+    --text-secondary: #a0aec0;
+    --text-muted: #888;
+    --border-color: #2d3748;
+    --hover-bg: #2a4365;
+    --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    --gradient-accent: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 15px 35px rgba(0, 0, 0, 0.4);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--background);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* Header y navegación */
+.navbar {
+    background: var(--surface);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+}
+
+.logo img {
+    height: 40px;
+    width: auto;
+}
+
+.nav-links {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.nav-links a {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+}
+
+.nav-links a:hover {
+    background: var(--hover-bg);
+    color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+/* Dropdown */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background: var(--card-bg);
+    min-width: 200px;
+    box-shadow: var(--shadow);
+    border-radius: 8px;
+    z-index: 1001;
+    border: 1px solid var(--border-color);
+    top: 100%;
+    right: 0;
+}
+
+.dropdown-content a {
+    color: var(--text-primary);
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    transition: background 0.3s ease;
+}
+
+.dropdown-content a:hover {
+    background: var(--hover-bg);
+}
+
+/* Búsqueda */
+.search-login {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+#search-form {
+    position: relative;
+}
+
+.search-bar {
+    padding: 10px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 25px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-size: 14px;
+    width: 300px;
+    transition: all 0.3s ease;
+}
+
+.search-bar:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
+    transform: scale(1.02);
+}
+
+/* Botones */
+.btn {
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    background: var(--gradient-accent);
+}
+
+.btn-login {
+    background: var(--gradient-accent);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+/* Usuario autenticado */
+.user-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 25px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.user-box:hover {
+    background: var(--hover-bg);
+    transform: translateY(-1px);
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--primary-color);
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    min-width: 180px;
+    z-index: 1001;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 12px 16px;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: background 0.3s ease;
+}
+
+.dropdown-menu a:hover {
+    background: var(--hover-bg);
+}
+
+.dropdown-menu hr {
+    border: none;
+    height: 1px;
+    background: var(--border-color);
+    margin: 4px 0;
+}
+
+/* Container y layout */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+}
+
+/* Detalle de película */
+.movie-detail {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.movie-poster {
+    width: 100%;
+    height: 450px;
+    object-fit: cover;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.placeholder-card {
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.movie-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.description {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin-bottom: 1.5rem;
+}
+
+/* Etiquetas */
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.tag {
+    background: var(--gradient-primary);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Estadísticas */
+.stats {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.stat-item span {
+    font-size: 1.rem;
+}
+
+/* Acciones */
+.actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Títulos de sección */
+.section-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+/* Video player */
+.video-player {
+    border-radius: 12px;
+    border: none;
+    box-shadow: var(--shadow);
+}
+
+/* Grid de elementos */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.item-card {
+    background: var(--surface);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+}
+
+.item-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-hover);
+}
+
+.item-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.movie-info {
+    padding: 1rem;
+}
+
+.movie-info h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.movie-genre {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.movie-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+/* Comentarios */
+.comment-item {
+    background: var(--surface);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid var(--primary-color);
+}
+
+.comment-item strong {
+    color: var(--primary-color);
+}
+
+/* Formularios */
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-size: 14px;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+}
+
+textarea.form-control {
+    min-height: 100px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+select.form-control {
+    cursor: pointer;
+}
+
+/* Tendencias globales */
+.otras-recomendaciones {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+}
+
+.otras-recomendaciones h3 {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.trending-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.trending-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+}
+
+.trending-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.trending-rank {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    min-width: 50px;
+}
+
+.trending-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.trending-placeholder {
+    width: 60px;
+    height: 60px;
+    background: var(--gradient-primary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.trending-info h4 {
+    font-size: 1.1rem;
+    margin-bottom: 0.3rem;
+}
+
+.rating-info {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.rating {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+.votes {
+    color: var(--text-muted);
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: var(--card-bg);
+    margin: 10% auto;
+    padding: 2rem;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-hover);
+}
+
+.close {
+    color: var(--text-muted);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+}
+
+.close:hover {
+    color: var(--text-primary);
+}
+
+/* Animaciones */
+.fade-in {
+    animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
+    .nav-links {
+        gap: 1rem;
+    }
+    
+    .search-bar {
+        width: 250px;
+    }
+    
+    .movie-detail {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    
+    .movie-poster {
+        max-width: 300px;
+        margin: 0 auto;
+    }
+    
+    .stats {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .actions {
+        justify-content: center;
+    }
+    
+    .grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .trending-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .container {
+        padding: 1rem;
+    }
+    
+    .card {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-bar {
+        width: 200px;
+    }
+    
+    .movie-title {
+        font-size: 2rem;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+    }
+    
+    .grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .stats {
+        gap: 1rem;
+    }
+    
+    .trending-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+    </style>
+</body>
+</html>

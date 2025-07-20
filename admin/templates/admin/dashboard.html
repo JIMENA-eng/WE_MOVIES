@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de Administración - ZimmyFlix</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            font-family: 'Segoe UI', sans-serif;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #012840;
+            color: #fff;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar h2 {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .sidebar a {
+            color: #fff;
+            text-decoration: none;
+            margin: 1rem 0;
+            font-weight: bold;
+            transition: 0.3s;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: #047baa;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+    <script>
+    async function cargarContenido(url, link) {
+        try {
+            // Marcar activo el enlace seleccionado
+            document.querySelectorAll('.sidebar a').forEach(el => el.classList.remove('active'));
+            if (link) link.classList.add('active');
+
+            // Cargar contenido dinámicamente
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Error al cargar contenido");
+
+            const html = await response.text();
+            document.getElementById('contenido').innerHTML = html;
+        } catch (error) {
+            document.getElementById('contenido').innerHTML = "<p>Error al cargar el contenido.</p>";
+            console.error(error);
+        }
+    }
+
+    window.onload = () => {
+        const primerLink = document.querySelector('.sidebar a');
+        if (primerLink) {
+            const url = primerLink.getAttribute('href');
+            cargarContenido(url, primerLink);
+        }
+    };
+</script>
+
+</head>
+<body>
+    <div class="sidebar">
+        <h2>🛠 Admin ZimmyFlix</h2>
+        <a href="/admin/usuarios/vista" onclick="event.preventDefault(); cargarContenido(this.href, this)">👥 Gestionar Usuarios</a>
+        <a href="/admin/peliculas/vista" onclick="event.preventDefault(); cargarContenido(this.href, this)">🎬 Películas</a>
+    
+        <a href="/admin/estadisticas">📊 Estadísticas</a>
+        <hr>
+        <a href="{{ url_for('logout') }}">🚪 Cerrar Sesión</a>
+            
+    </div>
+    <div class="main-content" id="contenido">
+        <!-- Aquí se cargará el contenido -->
+    </div>
+</body>
+</html>

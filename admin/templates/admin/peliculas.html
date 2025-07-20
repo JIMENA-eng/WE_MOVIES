@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Películas - ZimmyFlix</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to right, #003973, #E5E5BE);
+            color: #000;
+            padding: 2rem;
+        }
+
+        h2, h3 {
+            color: #fff;
+        }
+
+        table {
+            width: 100%;
+            background: #fff;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        th {
+            background: #012840;
+            color: #fff;
+        }
+
+        tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        .tag {
+            background: #007bff;
+            color: white;
+            padding: 2px 6px;
+            margin: 2px;
+            border-radius: 4px;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+
+        input, textarea, button, select {
+            padding: 0.5rem;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            width: 100%;
+        }
+
+        button {
+            background: #047baa;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #035d82;
+        }
+
+        .form-container {
+            background: #fff;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            max-width: 600px;
+        }
+
+        .acciones a {
+            margin-right: 10px;
+        }
+
+        .acciones form {
+            display: inline;
+        }
+
+        .form-edit {
+            margin-top: 2rem;
+        }
+
+        /* Estilos para el botón de inicio */
+        .header-principal {
+            margin-bottom: 2rem;
+        }
+
+        .boton-inicio {
+            display: inline-flex;
+            align-items: center;
+            background: #047baa;
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+
+        .boton-inicio:hover {
+            background: #035d82;
+            color: white;
+        }
+
+        .boton-inicio span:first-child {
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header-principal">
+        <div class="container">
+            <a href="/admin" class="boton-inicio">
+                <span>🏠</span>
+                <span>Inicio</span>
+            </a>
+        </div>
+    </header>
+
+    <h2>🎞️ Gestor de Películas</h2>
+
+    <!-- Formulario de búsqueda -->
+    <form method="get" action="/admin/peliculas/vista" style="margin-bottom: 1rem;">
+        <input type="text" name="buscar" placeholder="Buscar por título..." style="padding: 0.5rem; width: 250px;">
+        <button type="submit" style="padding: 0.5rem 1rem;">Buscar</button>
+    </form>
+
+    <!-- Lista de películas -->
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Año</th>
+                <th>Descripción</th>
+                <th>Etiquetas</th>
+                <th>Video</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in peliculas %}
+            <tr>
+                <td>{{ p.id }}</td>
+                <td>{{ p.titulo }}</td>
+                <td>{{ p.año_publicacion }}</td>
+                <td>{{ p.descripcion or '---' }}</td>
+                <td>
+                    {% for et in p.etiquetas %}
+                        <span class="tag">{{ et }}</span>
+                    {% endfor %}
+                </td>
+                <td>
+                    {% if p.url_video %}
+                        <a href="{{ p.url_video }}" target="_blank">Ver video</a>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td class="acciones">
+                    <form method="post" action="/admin/peliculas/eliminar/{{ p.id }}" onsubmit="return confirm('¿Eliminar esta película?')">
+                        <button type="submit">Eliminar</button>
+                    </form>
+                    <button onclick="cargarEdicion('{{ p.id }}', '{{ p.titulo }}', '{{ p.año_publicacion }}', `{{ p.descripcion|default('') }}`, `{{ p.etiquetas|join(', ') }}`)">Editar</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <hr>
+
+    <!-- Formulario de añadir o editar -->
+    <div class="form-container">
+    <h3 id="form-title">Añadir nueva película</h3>
+    <form method="post" id="pelicula-form" action="/admin/peliculas/añadir" enctype="multipart/form-data" class="form-edit">
+        <input type="hidden" name="id" id="pelicula-id">
+        <input type="text" name="titulo" id="titulo" placeholder="Título" required>
+        <input type="number" name="año" id="año" placeholder="Año publicación" required>
+        <textarea name="descripcion" id="descripcion" placeholder="Descripción" rows="3"></textarea>
+        <input type="text" name="etiquetas" id="etiquetas" placeholder="Etiquetas separadas por coma">
+        <label>Portada: <input type="file" name="portada" accept="image/*"></label>
+        <label>Card: <input type="file" name="card" accept="image/*"></label>
+        <button type="submit" id="submit-btn">Guardar</button>
+    </form>
+
+    <hr>
+
+    <!-- Formulario para registrar un video por URL externa -->
+    <form method="post" action="/admin/peliculas/video" style="margin-top: 1rem;">
+        <input type="number" name="pelicula_id" placeholder="ID de la película" required>
+        <label>URL del Video:
+            <input type="text" name="url_video" placeholder="https://drive.google.com/uc?export=download&id=..." required>
+        </label>
+        <button type="submit">Guardar Video</button>
+    </form>
+    </div>
+
+    <script>
+        function cargarEdicion(id, titulo, año, descripcion, etiquetas) {
+            document.getElementById('form-title').innerText = 'Editar película';
+            document.getElementById('pelicula-id').value = id;
+            document.getElementById('titulo').value = titulo;
+            document.getElementById('año').value = año;
+            document.getElementById('descripcion').value = descripcion;
+            document.getElementById('etiquetas').value = etiquetas;
+            document.getElementById('pelicula-form').action = "/admin/peliculas/editar/" + id;
+            document.getElementById('submit-btn').innerText = 'Actualizar';
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+    </script>
+
+</body>
+
+</html>
